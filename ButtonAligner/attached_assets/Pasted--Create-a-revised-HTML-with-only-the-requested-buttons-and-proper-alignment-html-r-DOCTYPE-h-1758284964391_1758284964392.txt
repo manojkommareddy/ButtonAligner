@@ -1,0 +1,503 @@
+# Create a revised HTML with only the requested buttons and proper alignment
+html = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ACS New Product Development Financial Analyzer — Compact</title>
+<style>
+  :root { --good:#14b85a; --warn:#e6b400; --bad:#e2556a; --accent:#2b6ef2; }
+  body.theme-light{
+    --bg:#0b1020; --fg:#e9edf6; --muted:#a3acc4; --line:#2b3358;
+    --card:#121937; --card-soft:#0f1540; --input:#0c1236;
+    --header1:#0f1540; --header2:#0c1236; --shadow:0 8px 24px rgba(0,0,0,.35);
+    --help-border:#6ea8fe; --help-fg:#6ea8fe;
+  }
+  body.theme-dark{
+    --bg:#f7f8fc; --fg:#0f1324; --muted:#54607a; --line:#e3e7f0;
+    --card:#ffffff; --card-soft:#f3f6fb; --input:#ffffff;
+    --header1:#ffffff; --header2:#f6f8fd; --shadow:0 6px 18px rgba(10,30,65,.08);
+    --help-border:#2b6ef2; --help-fg:#2b6ef2;
+  }
+  *{ box-sizing:border-box }
+  html,body{ height:100%; margin:0 }
+  body{ font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans",sans-serif; color:var(--fg); background:var(--bg) }
+
+  .brandbar{ background:var(--header1); padding:10px 16px; border-bottom:1px solid var(--line); font-weight:800; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:1000; box-shadow:var(--shadow) }
+  .titlebar{ background:var(--header2); padding:10px 16px; border-bottom:1px solid var(--line); display:flex; justify-content:center; gap:8px; position:sticky; top:44px; z-index:999; box-shadow:var(--shadow) }
+  .legend{ color:var(--muted); font-size:14px }
+  .legend .r{ color:var(--bad); font-weight:600; }
+  .legend .y{ color:var(--warn); font-weight:600; }
+  .legend .g{ color:var(--good); font-weight:600; }
+
+  .theme-toggle button,button{ padding:9px 12px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; box-shadow:var(--shadow) }
+  .wrap{ height:calc(100vh - 44px - 46px) }
+  .card{ height:100%; overflow:auto; padding:16px; background:var(--card) }
+  h1{ margin:0 0 8px; font-size:22px }
+  .sub{ margin:0 0 6px; color:var(--muted) }
+
+  .top-meta{ display:flex; gap:12px; justify-content:flex-end; flex-wrap:wrap; margin:6px 0 10px }
+  .top-meta label{ display:flex; flex-direction:column; font-size:12px; color:var(--muted); min-width:170px }
+  .top-meta input{ padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--input); color:var(--fg); font-size:13px }
+
+  .grid{ display:grid; gap:12px }
+  .cols-3{ grid-template-columns:repeat(3,minmax(0,1fr)) }
+  .cols-2{ grid-template-columns:1fr 1fr }
+  @media (max-width:900px){ .cols-3,.cols-2{ grid-template-columns:1fr } }
+
+  .section{ padding:12px; border:1px solid var(--line); border-radius:14px; background:var(--card-soft) }
+  .row{ display:grid; grid-template-columns:1fr 160px; gap:10px; align-items:center }
+  .row>label{ color:var(--muted); font-size:13px }
+  input[type="number"], input[type="text"], textarea{
+    width:100%; padding:9px 10px; border-radius:10px; border:1px solid var(--line); background:var(--input); color:var(--fg)
+  }
+  input[type="number"]{ text-align:right }
+  textarea{ min-height:96px; resize:vertical }
+
+  /* KPI rows */
+  .kpis{ display:flex; flex-wrap:nowrap; gap:10px; align-items:stretch; margin-top:10px; width:100%; }
+  .kpi{
+    position:relative; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:8px 10px; text-align:center; box-shadow:var(--shadow);
+    display:flex; flex-direction:column; justify-content:space-between; min-height:60px;
+    flex:1; min-width:0; white-space:nowrap; overflow:hidden;
+  }
+  .kpi-header{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:2px; }
+  .kpi b{ display:block; font-size:12px; color:var(--muted) }
+  .kpi span{ display:block; font-size:15px; font-variant-numeric: tabular-nums; letter-spacing:0; }
+
+  /* Color states for KPI cards in Outputs */
+  .kpi.pass{ 
+    background: linear-gradient(0deg, rgba(20,184,90,.12), rgba(20,184,90,.12)), var(--card);
+    border-color: rgba(20,184,90,.55);
+  }
+  .kpi.fail{
+    background: linear-gradient(0deg, rgba(226,85,106,.12), rgba(226,85,106,.12)), var(--card);
+    border-color: rgba(226,85,106,.55);
+  }
+
+  .outputs .kpis {justify-content:space-between; gap:10px;}
+
+  .status{ display:flex; align-items:center; gap:12px; padding:10px 0 }
+  .light{ width:24px; height:24px; border-radius:999px; border:1px solid var(--line); background:#dde3f1 }
+  .green{ background:var(--good) } .yellow{ background:var(--warn) } .red{ background:var(--bad) }
+  .muted{ color:var(--muted); font-size:12px }
+  .thinline{ height:1px; background:var(--line); margin:12px 0 }
+
+  .rightStack{ display:grid; grid-template-rows:auto 1fr; gap:12px; height:100% }
+  .notes-section{ display:flex; flex-direction:column }
+  .notes-section textarea{ flex:1 }
+
+  .help{ display:inline-block; color:var(--help-fg); font-weight:bold; cursor:help;
+         border:1px solid var(--help-border); border-radius:50%; width:16px; height:16px;
+         text-align:center; line-height:14px; font-size:12px; margin-left:6px; vertical-align:middle }
+  .kpi .help{ width:14px; height:14px; font-size:11px; line-height:12px; margin-left:6px; }
+
+  table.flows{ width:100%; border-collapse:collapse; background:var(--card); box-shadow:var(--shadow); table-layout:auto }
+  table.flows th, table.flows td{ padding:10px 12px; border-bottom:1px dashed var(--line); font-size:15px }
+  table.flows th:nth-child(1), table.flows td:nth-child(1){ text-align:left; width:64px }
+  table.flows th:nth-child(2), table.flows td:nth-child(2){ text-align:right; width:1%; white-space:nowrap; }
+  table.flows th:nth-child(3), table.flows td:nth-child(3){ text-align:left; width:auto }
+
+  @media print{
+    .brandbar,.titlebar,.theme-toggle,.btns{ display:none!important }
+    .wrap,.card{ height:auto; overflow:visible }
+    .section{ break-inside:avoid }
+  }
+
+  /* ===== COMPACT MODE – applies everywhere ===== */
+  body { font-size:14px; }
+  .grid { gap:8px; }
+  .cols-3 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .cols-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .section { padding:8px 10px; border-radius:12px; }
+  .section h2 { margin:0 0 6px; line-height:1.25; }
+  .row { grid-template-columns:1fr 140px; gap:6px; margin:2px 0; }
+  .row>label { font-size:12px; }
+  input[type="number"], input[type="text"], textarea { padding:6px 8px; font-size:13px; border-radius:8px; }
+  textarea { min-height:80px; }
+  .kpis { gap:8px; margin-top:6px; }
+  .kpi { padding:6px 8px; min-height:50px; }
+  .kpi b { font-size:11.5px; }
+  .kpi span { font-size:14px; }
+  .status { gap:8px; padding:6px 0; }
+  #statusText { font-size:16px; }
+  .btns{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-start; padding-top:4px; }
+  .btns button { padding:6px 10px; font-size:13px; border-radius:8px; line-height:1.1; }
+  .outputs table.flows { margin-top:6px; }
+  .outputs table.flows th, .outputs table.flows td { padding:5px 6px; font-size:12.5px; line-height:1.3; }
+
+  /* ===== Outputs full-width fix ===== */
+  .outputs { padding-left:0 !important; padding-right:0 !important; }
+  .outputs h2 { margin-top:0; padding:0 10px; }
+  .outputs .status { padding:6px 10px !important; }
+  .outputs .kpis { margin:0 10px 6px 10px; gap:8px; }
+  .outputs table.flows { width:100%; border-radius:0; margin:0; table-layout:auto; }
+</style>
+<script>
+(function(){
+  const KEY='acs_theme_v1';
+  const saved=localStorage.getItem(KEY)||'light';
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.body.classList.add('theme-'+saved);
+    document.getElementById('themeBtn')?.addEventListener('click',()=>{
+      const isLight=document.body.classList.contains('theme-light');
+      document.body.classList.toggle('theme-light',!isLight);
+      document.body.classList.toggle('theme-dark',isLight);
+      localStorage.setItem(KEY,isLight?'dark':'light');
+    });
+  });
+})();
+</script>
+</head>
+<body class="theme-light">
+  <div class="brandbar">
+    <div>Aviation Component Solutions</div>
+    <div class="theme-toggle"><button id="themeBtn">Switch Theme</button></div>
+  </div>
+  <div class="titlebar">
+    <b>ACS New Product Development Financial Analyzer</b>
+    <span class="legend">[ <span class="r">Red Light</span> / <span class="y">Yellow Light</span> / <span class="g">Green Light</span> ]</span>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <h1>Project Inputs & Criteria</h1>
+      <div class="sub">Edit parameters; results update instantly.</div>
+
+      <div class="top-meta">
+        <label>OEM PN <input id="oemPN" type="text" placeholder="e.g., 123-4567-8"></label>
+        <label>Development Partner <input id="devPartner" type="text" placeholder="Company / Lab"></label>
+        <label>Sales Director <input id="salesDirector" type="text" placeholder="Full name"></label>
+      </div>
+
+      <div class="grid cols-3">
+        <div class="section">
+          <h2>Cost Breakdowns (NRE) <span class="help" title="All one-time development costs (Non-Recurring Engineering)">?</span></h2>
+          <div class="row"><label>OEM Parts Cost (per unit) <span class="help" title="Cost to purchase one OEM unit for teardown/testing">?</span></label><input id="oemCost" type="number" step="0.01" value="3715"></div>
+          <div class="row"><label>OEM Parts Qty <span class="help" title="Number of OEM units to buy for development/validation">?</span></label><input id="oemQty" type="number" step="1" value="3"></div>
+          <div class="row"><label>Materials Inspection <span class="help" title="One-time cost for inspecting raw materials/components">?</span></label><input id="matInspect" type="number" step="0.01" value="1400"></div>
+          <div class="row"><label>In-house Labor Hours <span class="help" title="Engineering/technician hours required for development">?</span></label><input id="laborHours" type="number" step="1" value="24"></div>
+          <div class="row"><label>Labor Rate ($/hr) <span class="help" title="Hourly cost of in-house labor">?</span></label><input id="laborRate" type="number" step="0.01" value="100"></div>
+          <div class="row"><label>PMA Application Fee <span class="help" title="FAA PMA filing and related fees">?</span></label><input id="pmaFee" type="number" step="0.01" value="8000"></div>
+          <div class="row"><label>DER <span class="help" title="Designated Engineering Representative fees (if applicable)">?</span></label><input id="derFee" type="number" step="0.01" value="0"></div>
+          <div class="thinline"></div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-header"><b>OEM Parts Investment</b><span class="help" title="OEM Cost × Qty">?</span></div>
+              <span id="k_oemInv">$—</span>
+            </div>
+            <div class="kpi">
+              <div class="kpi-header"><b>Labor Cost</b><span class="help" title="Labor Hours × Labor Rate">?</span></div>
+              <span id="k_labor">$—</span>
+            </div>
+            <div class="kpi">
+              <div class="kpi-header"><b>Total NRE Cost</b><span class="help" title="OEM Investment + Materials Inspection + Labor Cost + PMA + DER">?</span></div>
+              <span id="k_nre" class="mono">$—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Estimated Revenue & Margin <span class="help" title="Per-unit price/cost and expected annual volume">?</span></h2>
+          <div class="row"><label>PMA Part SP (sell price) <span class="help" title="Expected selling price per PMA unit">?</span></label><input id="sp" type="number" step="0.01" value="1875"></div>
+          <div class="row"><label>PMA Part CP (cost) <span class="help" title="Expected production cost per PMA unit">?</span></label><input id="cp" type="number" step="0.01" value="1125"></div>
+          <div class="row"><label>Est Sales Qty (annual) <span class="help" title="Expected number of PMA units sold per year">?</span></label><input id="qty" type="number" step="1" value="30"></div>
+          <div class="thinline"></div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-header"><b>Est Annual Sales</b><span class="help" title="Sell Price × Annual Qty (revenue)">?</span></div>
+              <span id="k_sales">$—</span>
+            </div>
+            <div class="kpi">
+              <div class="kpi-header"><b>Unit Margin</b><span class="help" title="Sell Price − Cost per unit">?</span></div>
+              <span id="k_unitMargin">$—</span>
+            </div>
+            <div class="kpi">
+              <div class="kpi-header"><b>Est Annual Margin Dollars</b><span class="help" title="Unit Margin × Annual Qty">?</span></div>
+              <span id="k_margin" class="mono">$—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Ramp & Terminal <span class="help" title="Ramp % determines share of steady-state annual margin realized each year; terminal value captures value beyond Year 5">?</span></h2>
+          <div class="row"><label>RR Y1 (%) <span class="help" title="Ramp Rate Year 1">?</span></label><input id="rr1" type="number" step="0.1" value="23"></div>
+          <div class="row"><label>RR Y2 (%) <span class="help" title="Ramp Rate Year 2">?</span></label><input id="rr2" type="number" step="0.1" value="35"></div>
+          <div class="row"><label>RR Y3 (%) <span class="help" title="Ramp Rate Year 3">?</span></label><input id="rr3" type="number" step="0.1" value="53"></div>
+          <div class="row"><label>RR Y4 (%) <span class="help" title="Ramp Rate Year 4">?</span></label><input id="rr4" type="number" step="0.1" value="55"></div>
+          <div class="row"><label>RR Y5 (%) <span class="help" title="Ramp Rate Year 5">?</span></label><input id="rr5" type="number" step="0.1" value="55"></div>
+          <div class="row"><label>Terminal Multiple × Y5 CF <span class="help" title="Terminal Value = Year 5 Cash Flow × Multiple">?</span></label><input id="terminalMultiple" type="number" step="0.1" value="7"></div>
+          <div class="row"><label>Use Terminal Value in NPV? <span class="help" title="If checked, NPV includes discounted Terminal Value">?</span></label><input id="useTV" type="checkbox" checked></div>
+          <div class="row"><label>Discount Rate (%) <span class="help" title="Rate used to discount future cash flows (e.g., WACC)">?</span></label><input id="discount" type="number" step="0.1" value="10"></div>
+          <div class="thinline"></div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-header"><b>Y5 Cash Flow</b><span class="help" title="Year 5 cash flow = Est Annual Margin × RR5">?</span></div>
+              <span id="k_y5">$—</span>
+            </div>
+            <div class="kpi">
+              <div class="kpi-header"><b>Terminal Value</b><span class="help" title="Undiscounted terminal value; discounted amount is included in NPV only when enabled">?</span></div>
+              <span id="k_tv" class="mono">$—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid cols-2" style="margin-top:12px">
+        <div class="section outputs">
+          <h2>Outputs <span class="help" title="Status: GREEN = all 3 pass; YELLOW = 2/3; RED = 0–1 pass">?</span></h2>
+          <div class="status">
+            <div id="light" class="light"></div>
+            <div>
+              <div id="statusText" style="font-weight:600;font-size:18px;">—</div>
+              <div id="improveMsg" class="muted"></div>
+              <div class="muted">Rule: Green if all 3 pass; Yellow if 2/3; otherwise Red. <span class="help" title="We test 3 criteria: NPV ≥ threshold, IRR ≥ threshold, Payback ≤ threshold. Thresholds are set in the Criteria panel.">?</span></div>
+              <div id="criteriaStatus" class="muted" style="margin-top:6px;"></div>
+            </div>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi" id="kpi_npv">
+              <div class="kpi-header"><b>NPV (uses TV if checked)</b><span class="help" title="Sum of discounted cash flows; includes discounted TV only if 'Use TV' is checked">?</span></div>
+              <span id="k_npv" class="mono">$—</span>
+            </div>
+            <div class="kpi" id="kpi_irr">
+              <div class="kpi-header"><b>IRR (5y, no TV)</b><span class="help" title="IRR from years 0–5 cash flows only (excludes TV)">?</span></div>
+              <span id="k_irr" class="mono">—</span>
+            </div>
+            <div class="kpi" id="kpi_pbp">
+              <div class="kpi-header"><b>Payback Period</b><span class="help" title="Years until cumulative cash flows cover initial NRE">?</span></div>
+              <span id="k_pbp" class="mono">—</span>
+            </div>
+          </div>
+
+          <div class="thinline"></div>
+          <table id="flowTable" class="flows">
+            <colgroup>
+              <col style="width:64px" />
+              <col style="width:1%" />
+              <col />
+            </colgroup>
+            <thead><tr><th>Year</th><th>Cash Flow</th><th>Notes</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="rightStack">
+          <div class="section">
+            <h2>Criteria (editable) <span class="help" title="Set pass/fail thresholds for NPV, IRR, and Payback">?</span></h2>
+            <div class="row"><label>NPV must be ≥ <span class="help" title="Minimum acceptable Net Present Value after discounting (with TV if enabled)">?</span></label><input id="thrNPV" type="number" step="0.01" value="0"></div>
+            <div class="row"><label>IRR must be ≥ (%) <span class="help" title="Minimum acceptable IRR based on 5-year cash flows (no TV)">?</span></label><input id="thrIRR" type="number" step="0.1" value="20"></div>
+            <div class="row"><label>PBP must be ≤ (years) <span class="help" title="Maximum acceptable payback period in years">?</span></label><input id="thrPBP" type="number" step="0.1" value="4.3"></div>
+            <div class="thinline"></div>
+            <!-- Only the requested three buttons -->
+            <div class="btns">
+              <button id="reset" type="button">Reset defaults</button>
+              <button id="exportCsv" type="button">Export CSV</button>
+              <button id="exportPdf" type="button">Export PDF</button>
+            </div>
+            <div class="muted" style="margin-top:6px">Saved locally in your browser.</div>
+          </div>
+
+          <div class="section notes-section">
+            <h2>Notes <span class="help" title="Any comments, assumptions, supplier info, or approvals.">?</span></h2>
+            <textarea id="notes" placeholder="Add notes for this analysis..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const LS_KEY="acs_pma_ryg_v1";
+
+  const ids=[
+    "oemPN","devPartner","salesDirector",
+    "oemCost","oemQty","matInspect","laborHours","laborRate","pmaFee","derFee",
+    "sp","cp","qty","rr1","rr2","rr3","rr4","rr5",
+    "terminalMultiple","useTV","discount",
+    "thrNPV","thrIRR","thrPBP","notes"
+  ];
+
+  const fmtMoney=v=>isFinite(v)?v.toLocaleString(undefined,{style:"currency",currency:"USD",maximumFractionDigits:2}):"—";
+  function readNum(id){ const el=$(id); if(!el) return NaN; if(el.type==="checkbox") return el.checked?1:0; const v=parseFloat(el.value); return isFinite(v)?v:NaN; }
+
+  function cashflows(qtyOverride){
+    const oemInv=readNum("oemCost")*readNum("oemQty");
+    const laborCost=readNum("laborHours")*readNum("laborRate");
+    const nre=oemInv+readNum("matInspect")+laborCost+readNum("pmaFee")+readNum("derFee");
+
+    const sp=readNum("sp"), cp=readNum("cp");
+    const qty=(typeof qtyOverride==="number"?qtyOverride:readNum("qty"));
+    const estAnnualSales=sp*qty;
+    const unitMargin=sp-cp;
+    const estAnnualMargin=unitMargin*qty;
+
+    const rr=[readNum("rr1"),readNum("rr2"),readNum("rr3"),readNum("rr4"),readNum("rr5")].map(x=>x/100);
+    const flows=[-nre];
+    for(let i=0;i<5;i++) flows.push(estAnnualMargin*(rr[i]||0));
+
+    const y5=flows[5];
+    const tv=y5*readNum("terminalMultiple");
+    const disc=readNum("discount")/100;
+    return {oemInv,laborCost,nre,estAnnualSales,unitMargin,estAnnualMargin,flows,tv,disc,qty,sp};
+  }
+
+  function npv(rate,flows,tv){ let acc=flows[0]; for(let i=1;i<flows.length;i++) acc+=flows[i]/Math.pow(1+rate,i); if(isFinite(tv)) acc+=tv/Math.pow(1+rate,flows.length-1); return acc; }
+  function irr(flows){
+    const f=r=>npv(r,flows,NaN);
+    let lo=-0.99,hi=10,flo=f(lo),fhi=f(hi);
+    if(isNaN(flo)||isNaN(fhi))return NaN;
+    if(flo*fhi>0){ hi=100; fhi=f(hi); if(flo*fhi>0) return NaN; }
+    for(let k=0;k<200;k++){
+      const mid=(lo+hi)/2, fm=f(mid);
+      if(Math.abs(fm)<1e-6) return mid;
+      if(flo*fm<=0){ hi=mid; fhi=fm; } else { lo=mid; flo=fm; }
+    }
+    return (lo+hi)/2;
+  }
+  function payback(flows){
+    const initial=-flows[0]; if(!(initial>0)) return NaN;
+    let cum=0; for(let i=1;i<flows.length;i++){
+      const cf=flows[i], prev=cum; cum+=cf;
+      if(cum>=initial){ const need=initial-prev, frac=cf>0?need/cf:1; return (i-1)+frac; }
+    }
+    return Infinity;
+  }
+
+  function evalStatus(d){
+    const useTV=$("useTV").checked;
+    const npvVal=npv(d.disc,d.flows,useTV?d.tv:NaN);
+    const irrVal=irr(d.flows);
+    const pbpVal=payback(d.flows);
+    const passNPV=npvVal>=readNum("thrNPV");
+    const passIRR=isFinite(irrVal)&&irrVal>=readNum("thrIRR")/100;
+    const passPBP=isFinite(pbpVal)&&pbpVal<=readNum("thrPBP");
+    const passes=(passNPV?1:0)+(passIRR?1:0)+(passPBP?1:0);
+    const status=passes===3?"GREEN":(passes===2?"YELLOW":"RED");
+    return {npvVal,irrVal,pbpVal,passNPV,passIRR,passPBP,passes,status};
+  }
+
+  function saveInputs(){
+    const data={};
+    ids.forEach(id=>{
+      const el=$(id); if(!el) return;
+      data[id] = (el.type==="checkbox") ? el.checked : el.value;
+    });
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(data)); }catch{}
+  }
+
+  function exportCSV(){
+    const d=cashflows();
+    const useTV=$("useTV").checked;
+    const rows=[
+      ["Year","Cash Flow","Notes"],
+      ["0",(-d.nre).toFixed(2),"Initial NRE (outflow)"],
+      ["1",d.flows[1].toFixed(2),"Y1 = EstMargin × RR1"],
+      ["2",d.flows[2].toFixed(2),"Y2 = EstMargin × RR2"],
+      ["3",d.flows[3].toFixed(2),"Y3 = EstMargin × RR3"],
+      ["4",d.flows[4].toFixed(2),"Y4 = EstMargin × RR4"],
+      ["5",d.flows[5].toFixed(2),"Y5 = EstMargin × RR5"],
+    ];
+    if(useTV){ rows.push(["5 (TV)", d.tv.toFixed(2), "Terminal Value"]); }
+    const csv = rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "acs_financial_analyzer_flows.csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function update(){
+    const d=cashflows();
+
+    // KPIs (inputs)
+    $("k_oemInv").textContent=fmtMoney(d.oemInv);
+    $("k_labor").textContent=fmtMoney(d.laborCost);
+    $("k_nre").textContent=fmtMoney(d.nre);
+    $("k_sales").textContent=fmtMoney(d.estAnnualSales);
+    $("k_unitMargin").textContent=fmtMoney(d.unitMargin);
+    $("k_margin").textContent=fmtMoney(d.estAnnualMargin);
+    $("k_y5").textContent=fmtMoney(d.flows[5]);
+    $("k_tv").textContent=fmtMoney(d.tv);
+
+    const s=evalStatus(d);
+    $("k_npv").textContent=fmtMoney(s.npvVal);
+    $("k_irr").textContent=isFinite(s.irrVal)?(s.irrVal*100).toFixed(2)+"%":"—";
+    $("k_pbp").textContent =
+      (s.pbpVal === Infinity) ? "No payback" :
+      (isFinite(s.pbpVal) ? s.pbpVal.toFixed(2) + " yrs" : "—");
+
+    // Color on KPI cards
+    const set=(el,pass)=>{ if(!el) return; el.classList.toggle("pass",!!pass); el.classList.toggle("fail",!pass); };
+    set(document.getElementById("kpi_npv"), s.passNPV);
+    set(document.getElementById("kpi_irr"), s.passIRR);
+    set(document.getElementById("kpi_pbp"), s.passPBP);
+
+    $("light").className="light "+(s.status==="GREEN"?"green":s.status==="YELLOW"?"yellow":"red");
+    $("statusText").textContent=s.status+(s.passes===3?" (all 3 pass)":s.passes===2?" (2/3 pass)":" (≤1 pass)");
+
+    const msgEl=$("improveMsg");
+    if(s.status!=="GREEN"){
+      let add=0, maxTry=5000, base=cashflows();
+      const target=()=>evalStatus(cashflows(base.qty+add)).status;
+      if(evalStatus(base).status==="GREEN"){ msgEl.textContent=""; }
+      else{
+        while(add<=maxTry){ if(target()==="GREEN") break; add++; }
+        const addRevenue = base.sp*add;
+        msgEl.textContent = add>0 ? `To reach GREEN: +${add} units/year (≈ ${fmtMoney(addRevenue)} revenue) at current pricing/costs.` : "Increase annual usage/sales or improve margin to reach GREEN.";
+      }
+    } else msgEl.textContent="";
+
+    const crit=[
+      { name:"NPV", pass:s.passNPV, value:fmtMoney(s.npvVal), target:`≥ ${readNum("thrNPV")}`, delta: s.npvVal<readNum("thrNPV") ? `short by ${fmtMoney(readNum("thrNPV")-s.npvVal)}` : "ok" },
+      { name:"IRR", pass:s.passIRR, value:isFinite(s.irrVal)?(s.irrVal*100).toFixed(2)+"%":"—", target:`≥ ${readNum("thrIRR")}%`, delta: isFinite(s.irrVal)? ( (s.irrVal*100<readNum("thrIRR")) ? `short by ${(readNum("thrIRR")-(s.irrVal*100)).toFixed(1)}%` : "ok") : "—" },
+      { name:"PBP", pass:s.passPBP, value:(s.pbpVal===Infinity)?"No payback":(isFinite(s.pbpVal)?s.pbpVal.toFixed(2)+" yrs":"—"), target:`≤ ${readNum("thrPBP")} yrs`, delta: isFinite(s.pbpVal)? ( (s.pbpVal>readNum("thrPBP")) ? `over by ${(s.pbpVal-readNum("thrPBP")).toFixed(2)} yrs` : "ok") : "—" }
+    ];
+    $("criteriaStatus").innerHTML =
+      crit.map(c => `${c.pass?'✅':'❌'} <b>${c.name}</b>: ${c.value} (target ${c.target}${c.delta!=="ok"?`, ${c.delta}`:""})`).join("<br>");
+  }
+
+  // Wire input persistence + live updates
+  ids.forEach(id=>{
+    const el=$(id); if(!el) return;
+    const ev = (el.type==="checkbox") ? "change" : "input";
+    el.addEventListener(ev, ()=>{ saveInputs(); update(); });
+  });
+
+  // Buttons
+  document.addEventListener("DOMContentLoaded", ()=>{
+    const resetBtn = $("reset");
+    const exportBtn = $("exportCsv");
+    const pdfBtn = $("exportPdf");
+    resetBtn?.addEventListener("click", ()=>{ try{localStorage.removeItem(LS_KEY);}catch{} window.location.reload(); });
+    exportBtn?.addEventListener("click", exportCSV);
+    pdfBtn?.addEventListener("click", ()=>window.print());
+  });
+
+  // Load saved & render
+  (function load(){
+    try{
+      const raw=localStorage.getItem(LS_KEY);
+      if(raw){
+        const data=JSON.parse(raw);
+        ids.forEach(id=>{
+          const el=$(id); if(!el||!(id in data)) return;
+          if(el.type==="checkbox") el.checked=!!data[id]; else el.value=data[id];
+        });
+      }
+    }catch{}
+  })();
+  update();
+})();
+</script>
+</body>
+</html>
+"""
+path = "/mnt/data/acs_financial_analyzer_buttons_trimmed.html"
+with open(path, "w", encoding="utf-8") as f:
+    f.write(html)
+path
